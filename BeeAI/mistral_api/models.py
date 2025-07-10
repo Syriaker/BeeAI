@@ -1,7 +1,6 @@
 from django.db import models
 
 class MistralAPI(models.Model):
-    #хранение логов
     prompt = models.TextField()
     response = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
