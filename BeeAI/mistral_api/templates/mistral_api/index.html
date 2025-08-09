@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Metrika + Mistral</title>
+</head>
+<body>
+    <h1>Metrika Data</h1>
+    <form id="metrikaForm">
+        <label for="counter_id">ID счетчика:</label><br>
+        <input type="text" id="counter_id" name="counter_id"><br><br>
+
+        <label for="api_token">API Токен:</label><br>
+        <input type="text" id="api_token" name="api_token"><br><br>
+
+        <button type="button" onclick="sendData()">Получить данные и сгенерировать ответ</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script>
+        async function sendData() {
+            const counterId = document.getElementById("counter_id").value;
+            const apiToken = document.getElementById("api_token").value;
+
+            const data = {
+                counter_id: counterId,
+                api_token: apiToken
+            };
+
+            try {
+                const response = await fetch("/mistral/metrika/", {  // URL теперь /mistral/metrika/
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken") //Важно для защиты от CSRF
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                document.getElementById("response").innerText = "Ответ: " + responseData.response;
+
+            } catch (error) {
+                console.error("Ошибка:", error);
+                document.getElementById("response").innerText = "Ошибка: " + error;
+            }
+        }
+
+        // Функция для получения значения CSRF-токена из cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

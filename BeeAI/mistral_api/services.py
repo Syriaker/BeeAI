@@ -28,12 +28,14 @@ class MistralService:
 
         cls.load_model()
 
-        inputs = cls.TOKENIZER(prompt, return_tensors="pt").to(cls.DEVICE)
+        formatted_prompt = f"Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение: {prompt}.  В заключении укажи основные тренды и предложи улучшения."
+
+        inputs = cls.TOKENIZER(formatted_prompt, return_tensors="pt").to(cls.DEVICE)
 
         with torch.no_grad():
             outputs = cls.MODEL.generate(
                 **inputs,
-                max_new_tokens=50,
+                max_new_tokens=150,
                 do_sample=True,
                 temperature=0.7,
                 top_k=50,
@@ -46,8 +48,8 @@ class MistralService:
 
 
 
-if __name__ == '__main__':
+"""if __name__ == '__main__':
     MistralService.load_model()
     prompt = "Сколько букв в английском алфавите?"
     response = MistralService.generate_response(prompt)
-    print(f"Prompt: {prompt}\nResponse: {response}")
+    print(f"Prompt: {prompt}\nResponse: {response}")"""
