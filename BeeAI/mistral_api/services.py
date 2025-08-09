@@ -6,7 +6,7 @@ import os
 
 
 class MistralService:
-    MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"  # или "mistralai/Mistral-7B-Instruct-v0.1" для instruct
+    MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
     TOKENIZER = None
     MODEL = None
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -16,7 +16,7 @@ class MistralService:
 
         if cls.MODEL is None or cls.TOKENIZER is None:
             print(f"Загрузка модели {cls.MODEL_NAME}...")
-            login(token="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")
+            login(token="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") #спрятать потом
             cls.TOKENIZER = AutoTokenizer.from_pretrained(cls.MODEL_NAME)
             cls.MODEL = AutoModelForCausalLM.from_pretrained(cls.MODEL_NAME, torch_dtype=torch.float16)
             cls.MODEL.to(cls.DEVICE)
@@ -28,7 +28,7 @@ class MistralService:
 
         cls.load_model()
 
-        formatted_prompt = f"Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение: {prompt}.  В заключении укажи основные тренды и предложи улучшения."
+        formatted_prompt = f"Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение: {prompt}.  В заключении укажи основные тренды и предложи улучшения." #тестовый промпт, поменять потом под задачи
 
         inputs = cls.TOKENIZER(formatted_prompt, return_tensors="pt").to(cls.DEVICE)
 
@@ -45,11 +45,3 @@ class MistralService:
 
         decoded_output = cls.TOKENIZER.decode(outputs[0], skip_special_tokens=True)
         return decoded_output
-
-
-
-"""if __name__ == '__main__':
-    MistralService.load_model()
-    prompt = "Сколько букв в английском алфавите?"
-    response = MistralService.generate_response(prompt)
-    print(f"Prompt: {prompt}\nResponse: {response}")"""
