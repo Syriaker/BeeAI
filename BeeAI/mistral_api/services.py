@@ -28,20 +28,28 @@ class MistralService:
 
         cls.load_model()
 
-        formatted_prompt = f"Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение: {prompt}.  В заключении укажи основные тренды и предложи улучшения." #тестовый промпт, поменять потом под задачи
+        formatted_prompt = f"<s>[INST] Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение на английском языке: {prompt}. В заключении предложи улучшения и способы увеличть полученные цифры, основываясь на полученных данных. [/INST]"
+        #тестовый промпт, поменять потом под задачи
 
         inputs = cls.TOKENIZER(formatted_prompt, return_tensors="pt").to(cls.DEVICE)
 
         with torch.no_grad():
             outputs = cls.MODEL.generate(
                 **inputs,
-                max_new_tokens=150,
+                max_new_tokens=250,
                 do_sample=True,
                 temperature=0.7,
                 top_k=50,
                 top_p=0.95,
                 repetition_penalty=1.15
             )
+        full_output = cls.TOKENIZER.decode(outputs[0], skip_special_tokens=True)
 
-        decoded_output = cls.TOKENIZER.decode(outputs[0], skip_special_tokens=True)
-        return decoded_output
+        # Удаляем промпт из ответа
+        if "[/INST]" in full_output:
+            response = full_output.split("[/INST]")[1].strip()
+        else:
+            # Если формат не распознан, возвращаем все после последнего промпта
+            response = full_output.replace(formatted_prompt, "").strip()
+
+        return response

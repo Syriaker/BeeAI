@@ -25,7 +25,7 @@ class MetrikaAPIView(APIView):
             counter_id = int(counter_id)
 
             params = {
-                'date1': '6daysAgo',
+                'date1': '60daysAgo',
                 'date2': 'today',
                 'id': counter_id,
                 'metrics': 'ym:s:visits,ym:s:users',
@@ -67,7 +67,6 @@ class MistralAPIView(APIView):
         try:
 
             response = MistralService.generate_response(prompt)
-
 
             MistralAPI.objects.create(prompt=prompt, response=response)
 
