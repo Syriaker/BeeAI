@@ -3,20 +3,24 @@ from rest_framework.response import Response
 from rest_framework import status
 from .services import MistralService
 from .models import MistralAPI
+from datetime import datetime
 import requests
 from django.shortcuts import render
 
 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
 
-
-def my_view(request):
-    return render(request, 'mistral_api/index.html')
-
-
 class MetrikaAPIView(APIView):
     def post(self, request):
+        print("=" * 50)
+        print(f"!!! ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ФРОНТЕНДА !!!")
+        print(f"Время получения: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"Содержимое запроса (request.data): {request.data}")
+        print("=" * 50)
         counter_id = request.data.get('counter_id')
         api_token = request.data.get('api_token')
+        charts = request.data.get('charts', [])  # Добавляем получение charts
+
+        print(f"Полученные графики: {charts}")
 
         if not counter_id or not api_token:
             return Response({"error": "Не указаны ID счетчика или API токен"}, status=status.HTTP_400_BAD_REQUEST)
@@ -37,9 +41,10 @@ class MetrikaAPIView(APIView):
             r.raise_for_status()
 
             metrika_data = r.text
+            #print(metrika_data)
 
-            mistral_response = MistralService.generate_response(metrika_data)  # Передача данных из Метрики
-            MistralAPI.objects.create(prompt=metrika_data, response=mistral_response)  # Сохраняем в БД (Мирону настроить для начала)
+            mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
+            MistralAPI.objects.create(prompt=metrika_data, response=mistral_response)
 
             return Response({"response": mistral_response}, status=status.HTTP_200_OK)
 
@@ -66,7 +71,7 @@ class MistralAPIView(APIView):
 
         try:
 
-            response = MistralService.generate_response(prompt)
+            response = 'test' #MistralService.generate_response(prompt)
 
             MistralAPI.objects.create(prompt=prompt, response=response)
 
