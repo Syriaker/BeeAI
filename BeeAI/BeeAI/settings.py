@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'mistral_api',
     'rest_framework',
+    'rest_framework.authtoken',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -96,8 +98,11 @@ CSRF_COOKIE_SECURE = False
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny'  # Или более строгие правила
+        'rest_framework.permissions.IsAuthenticated'
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -164,3 +169,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 WHITENOISE_INDEX_FILE = True
 WHITENOISE_ROOT = BASE_DIR / 'static'
+
+#AUTH_USER_MODEL = 'accounts.CustomUser'

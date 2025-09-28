@@ -1,18 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .services import MistralService
 from .models import MistralAPI
 from datetime import datetime
 import requests
-from django.shortcuts import render
+from rest_framework.permissions import IsAuthenticated
 
 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
 
 class MetrikaAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         print("=" * 50)
         print(f"!!! ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ФРОНТЕНДА !!!")
+        print(f"Пользователь: {request.user}")
         print(f"Время получения: {datetime.now().strftime('%H:%M:%S')}")
         print(f"Содержимое запроса (request.data): {request.data}")
         print("=" * 50)
@@ -62,6 +63,7 @@ class MetrikaAPIView(APIView):
 
 
 class MistralAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
 
         prompt = request.data.get('prompt')
