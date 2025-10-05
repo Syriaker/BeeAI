@@ -4,24 +4,16 @@ from rest_framework import status
 from .models import MistralAPI
 from datetime import datetime
 import requests
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
 
 class MetrikaAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     def post(self, request):
-        print("=" * 50)
-        print(f"!!! ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ФРОНТЕНДА !!!")
-        print(f"Пользователь: {request.user}")
-        print(f"Время получения: {datetime.now().strftime('%H:%M:%S')}")
-        print(f"Содержимое запроса (request.data): {request.data}")
-        print("=" * 50)
         counter_id = request.data.get('counter_id')
         api_token = request.data.get('api_token')
-        charts = request.data.get('charts', [])  # Добавляем получение charts
-
-        print(f"Полученные графики: {charts}")
+        charts = request.data.get('charts', [])
 
         if not counter_id or not api_token:
             return Response({"error": "Не указаны ID счетчика или API токен"}, status=status.HTTP_400_BAD_REQUEST)
@@ -42,7 +34,6 @@ class MetrikaAPIView(APIView):
             r.raise_for_status()
 
             metrika_data = r.text
-            #print(metrika_data)
 
             mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
             MistralAPI.objects.create(prompt=metrika_data, response=mistral_response)
@@ -63,7 +54,7 @@ class MetrikaAPIView(APIView):
 
 
 class MistralAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     def post(self, request):
 
         prompt = request.data.get('prompt')
@@ -79,6 +70,5 @@ class MistralAPIView(APIView):
 
             return Response({"response": response}, status=status.HTTP_200_OK)
         except Exception as e:
-            # Обработайте любые ошибки
             print(f"Error generating response: {e}")
             return Response({"error": "Failed to generate response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
