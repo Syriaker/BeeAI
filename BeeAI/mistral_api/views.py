@@ -65,8 +65,8 @@ class MetrikaAPIView(APIView):
                     "chart_id": 7,
                     "chart_type": "Круговая диаграмма",
                     "data": [
-                        {"category": "ПК", "value": pc_percentage},
-                        {"category": "Мобильные", "value": mobile_percentage},
+                        {"category": "ПК", "value": str(pc)},
+                        {"category": "Мобильные", "value": str(mobile)},
                     ]
                 })
 
@@ -84,7 +84,7 @@ class MetrikaAPIView(APIView):
                 charts_data = charts_data_response
             )
 
-            return Response({"ai_response": mistral_response,"charts_data": charts_data_response}, status=status.HTTP_200_OK)
+            return Response({"response": mistral_response,"charts_data": charts_data_response}, status=status.HTTP_200_OK)
 
         except ValueError:
             return Response({"error": "Некорректный ID счетчика. Должно быть целым числом."},
