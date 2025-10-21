@@ -1,16 +1,25 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
 from .models import MistralAPI
 from datetime import datetime
 import requests
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from .serializers import AnalysisHistorySerializer, AnalysisDetailSerializer
+import pandas as pd
+import io
 
 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
 
 class MetrikaAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
+        print("=" * 50)
+        print(f"!!! ПОЛУЧЕН НОВЫЙ ЗАПРОС ОТ ФРОНТЕНДА !!!")
+        print(f"Время получения: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"Содержимое запроса (request.data): {request.data}")
+        print("=" * 50)
         counter_id = request.data.get('counter_id')
         api_token = request.data.get('api_token')
         charts = request.data.get('charts', [])
@@ -26,7 +35,7 @@ class MetrikaAPIView(APIView):
                 'date2': 'today',
                 'id': counter_id,
                 'metrics': 'ym:s:visits,ym:s:users',
-                'dimensions': 'ym:s:TrafficSource',
+                'dimensions': 'ym:s:deviceCategory',
                 'limit': 100
             }
 
@@ -34,11 +43,48 @@ class MetrikaAPIView(APIView):
             r.raise_for_status()
 
             metrika_data = r.text
+            charts_data_response = []
+
+            csv_file = io.StringIO(metrika_data)
+
+            df = pd.read_csv(csv_file, header=0)
+            df = df.dropna(how='all')
+            df = df.reset_index(drop=True)
+
+            if 7 in charts:
+                total = df.iloc[0, 1]
+                mobile = df.iloc[1, 1]
+                pc = df.iloc[2, 1]
+
+                mobile_percentage = round((mobile/total * 100), 2)
+                pc_percentage = round((pc/total * 100), 2)
+
+
+
+                charts_data_response.append({
+                    "chart_id": 7,
+                    "chart_type": "Круговая диаграмма",
+                    "data": [
+                        {"category": "ПК", "value": pc_percentage},
+                        {"category": "Мобильные", "value": mobile_percentage},
+                    ]
+                })
+
+
+
+            print(metrika_data)
 
             mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
-            MistralAPI.objects.create(prompt=metrika_data, response=mistral_response)
 
-            return Response({"response": mistral_response}, status=status.HTTP_200_OK)
+            MistralAPI.objects.create(
+                user=request.user,
+                counter_id=counter_id,
+                prompt=metrika_data,
+                response=mistral_response,
+                charts_data = charts_data_response
+            )
+
+            return Response({"ai_response": mistral_response,"charts_data": charts_data_response}, status=status.HTTP_200_OK)
 
         except ValueError:
             return Response({"error": "Некорректный ID счетчика. Должно быть целым числом."},
@@ -54,7 +100,7 @@ class MetrikaAPIView(APIView):
 
 
 class MistralAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
 
         prompt = request.data.get('prompt')
@@ -72,3 +118,20 @@ class MistralAPIView(APIView):
         except Exception as e:
             print(f"Error generating response: {e}")
             return Response({"error": "Failed to generate response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AnalysisHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_analyses = MistralAPI.objects.filter(user=request.user).order_by('-created_at')
+        serializer = AnalysisHistorySerializer(user_analyses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AnalysisDetailView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AnalysisDetailSerializer
+    queryset = MistralAPI.objects.all()
+
+    def get_queryset(self):
+
+        return self.queryset.filter(user=self.request.user)

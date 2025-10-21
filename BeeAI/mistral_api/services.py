@@ -4,7 +4,6 @@ from huggingface_hub import login
 from django.conf import settings
 import os
 
-
 class MistralService:
     MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
     TOKENIZER = None
@@ -29,7 +28,6 @@ class MistralService:
         cls.load_model()
 
         formatted_prompt = f"<s>[INST] Проанализируй следующие данные из Яндекс.Метрики и дай краткое заключение на английском языке: {prompt}. В заключении предложи улучшения и способы увеличть полученные цифры, основываясь на полученных данных. [/INST]"
-        #тестовый промпт, поменять потом под задачи
 
         inputs = cls.TOKENIZER(formatted_prompt, return_tensors="pt").to(cls.DEVICE)
 
@@ -45,11 +43,9 @@ class MistralService:
             )
         full_output = cls.TOKENIZER.decode(outputs[0], skip_special_tokens=True)
 
-        # Удаляем промпт из ответа
         if "[/INST]" in full_output:
             response = full_output.split("[/INST]")[1].strip()
         else:
-            # Если формат не распознан, возвращаем все после последнего промпта
             response = full_output.replace(formatted_prompt, "").strip()
 
         return response
