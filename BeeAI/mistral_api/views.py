@@ -10,8 +10,6 @@ from .serializers import AnalysisHistorySerializer, AnalysisDetailSerializer
 import pandas as pd
 import io
 
-API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
-
 class MetrikaAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -20,7 +18,7 @@ class MetrikaAPIView(APIView):
         print(f"Время получения: {datetime.now().strftime('%H:%M:%S')}")
         print(f"Содержимое запроса (request.data): {request.data}")
         print("=" * 50)
-        counter_id = request.data.get('counter_id')
+        counter_id = int(request.data.get('counter_id'))
         api_token = request.data.get('api_token')
         charts = request.data.get('charts', [])
 
@@ -28,38 +26,31 @@ class MetrikaAPIView(APIView):
             return Response({"error": "Не указаны ID счетчика или API токен"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            counter_id = int(counter_id)
-
-            params = {
-                'date1': '60daysAgo',
-                'date2': 'today',
-                'id': counter_id,
-                'metrics': 'ym:s:visits,ym:s:users',
-                'dimensions': 'ym:s:deviceCategory',
-                'limit': 100
-            }
-
-            r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
-            r.raise_for_status()
-
-            metrika_data = r.text
-            charts_data_response = []
-
-            csv_file = io.StringIO(metrika_data)
-
-            df = pd.read_csv(csv_file, header=0)
-            df = df.dropna(how='all')
-            df = df.reset_index(drop=True)
-
             if 7 in charts:
-                total = df.iloc[0, 1]
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
+                params = {
+                    'date1': '60daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:visits,ym:s:users',
+                    'dimensions': 'ym:s:deviceCategory',
+                    'limit': 100
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+                charts_data_response = []
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+
                 mobile = df.iloc[1, 1]
                 pc = df.iloc[2, 1]
-
-                mobile_percentage = round((mobile/total * 100), 2)
-                pc_percentage = round((pc/total * 100), 2)
-
-
 
                 charts_data_response.append({
                     "chart_id": 7,
@@ -70,9 +61,37 @@ class MetrikaAPIView(APIView):
                     ]
                 })
 
+            if 1 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:visits',
+                    'group': 'day',
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+                print(metrika_data)
+                charts_data_response = []
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+                df['(Визиты)'] = pd.to_numeric(df['(Визиты)'])
 
 
-            print(metrika_data)
+                charts_data_response.append({
+                    "chart_id": 1,
+                    "chart_type": "Столбчатая диаграмма",
+                    "data": df.rename(columns={'Период': 'time', '(Визиты)': 'value'}).to_dict('records')
+                })
+
 
             mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
 
