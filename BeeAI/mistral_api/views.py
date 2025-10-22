@@ -10,6 +10,8 @@ from .serializers import AnalysisHistorySerializer, AnalysisDetailSerializer
 import pandas as pd
 import io
 
+charts_data_response = []
+
 class MetrikaAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -41,7 +43,6 @@ class MetrikaAPIView(APIView):
                 r.raise_for_status()
 
                 metrika_data = r.text
-                charts_data_response = []
 
                 csv_file = io.StringIO(metrika_data)
 
@@ -75,8 +76,6 @@ class MetrikaAPIView(APIView):
                 r.raise_for_status()
 
                 metrika_data = r.text
-                print(metrika_data)
-                charts_data_response = []
 
                 csv_file = io.StringIO(metrika_data)
 
@@ -91,6 +90,8 @@ class MetrikaAPIView(APIView):
                     "chart_type": "Столбчатая диаграмма",
                     "data": df.rename(columns={'Период': 'time', '(Визиты)': 'value'}).to_dict('records')
                 })
+            for i in charts_data_response:
+                print(i)
 
 
             mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
