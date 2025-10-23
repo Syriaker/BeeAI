@@ -8,6 +8,7 @@ import requests
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import AnalysisHistorySerializer, AnalysisDetailSerializer
 import pandas as pd
+import numpy as np
 import io
 
 charts_data_response = []
@@ -28,6 +29,131 @@ class MetrikaAPIView(APIView):
             return Response({"error": "Не указаны ID счетчика или API токен"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            if 1 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:visits',
+                    'group': 'day',
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+                df['(Визиты)'] = pd.to_numeric(df['(Визиты)'])
+
+
+                charts_data_response.append({
+                    "chart_id": 1,
+                    "chart_type": "Столбчатая диаграмма",
+                    "data": df.rename(columns={'Период': 'time', '(Визиты)': 'value'}).to_dict('records')
+                })
+
+            if 2 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:pageviews',
+                    'group': 'day',
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+                df['(Просмотры)'] = pd.to_numeric(df['(Просмотры)'])
+
+
+                charts_data_response.append({
+                    "chart_id": 2,
+                    "chart_type": "Столбчатая диаграмма",
+                    "data": df.rename(columns={'Период': 'time', '(Просмотры)': 'value'}).to_dict('records')
+                })
+
+
+
+            if 4 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:avgVisitDurationSeconds',
+                    'group': 'day',
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+                df['value'] = pd.to_timedelta(df['(Время на сайте)']).dt.total_seconds().astype(int)
+
+                charts_data_response.append({
+                    "chart_id": 4,
+                    "chart_type": "Гладкий график",
+                    "data": df[['Период', 'value']]
+                    .rename(columns={'Период': 'date'})
+                    .to_dict('records')
+                })
+
+            if 6 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:visits',
+                    'dimensions': 'ym:s:bounce',
+                    'group': 'day',
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+                df['Отказ (Визиты)'] = pd.to_numeric(df['Отказ (Визиты)'])
+                df['Не отказ (Визиты)'] = pd.to_numeric(df['Не отказ (Визиты)'])
+                df['total_visits'] = df['Отказ (Визиты)'] + df['Не отказ (Визиты)']
+                df['value'] = (df['Отказ (Визиты)'] / df['total_visits']).fillna(0)
+
+
+                charts_data_response.append({
+                    "chart_id": 6,
+                    "chart_type": "Линейный график",
+                    "data": df[['Период', 'value']]
+                    .rename(columns={'Период': 'date'})
+                    .to_dict('records')
+                })
+
             if 7 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
                 params = {
@@ -62,14 +188,15 @@ class MetrikaAPIView(APIView):
                     ]
                 })
 
-            if 1 in charts:
-                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+            if 8 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
                 params = {
                     'date1': '6daysAgo',
                     'date2': 'today',
                     'id': counter_id,
-                    'metrics': 'ym:s:visits',
-                    'group': 'day',
+                    'metrics': 'ym:s:users',
+                    'dimensions': 'ym:s:ageInterval',
+                    'limit': 100
                 }
 
                 r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
@@ -82,14 +209,74 @@ class MetrikaAPIView(APIView):
                 df = pd.read_csv(csv_file, header=0)
                 df = df.dropna(how='all')
                 df = df.reset_index(drop=True)
-                df['(Визиты)'] = pd.to_numeric(df['(Визиты)'])
+
+                DESIRED_RANGES = ["18-24", "25-34", "35-44", "45-54", "55+"]
+                template_df = pd.DataFrame({
+                    'age_range': DESIRED_RANGES,
+                    'value': 0
+                }).set_index('age_range')
+                df = df[df['Возраст'] != 'Итого и средние'].copy()
+                df['age_range'] = df['Возраст'].str.replace(' года', '').str.replace(' лет', '') \
+                    .str.replace('‑', '-').str.replace('старше ', '') \
+                    .str.replace('младше ', '0-')
+                df = df.rename(columns={'Посетители': 'value'})
+                df['value'] = pd.to_numeric(df['value'])
+                df_processed = df.set_index('age_range')
+                template_df.update(df_processed)
 
 
                 charts_data_response.append({
-                    "chart_id": 1,
-                    "chart_type": "Столбчатая диаграмма",
-                    "data": df.rename(columns={'Период': 'time', '(Визиты)': 'value'}).to_dict('records')
+                    "chart_id": 8,
+                    "chart_type": "Гистограмма",
+                    "data": template_df.reset_index().to_dict('records')
                 })
+
+            if 9 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:visits',
+                    'dimensions': 'ym:s:operatingSystem',
+                    'limit': 100
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+
+                df = df[df['Операционная система (детально)'] != 'Итого и средние'].copy()
+                df['Визиты'] = pd.to_numeric(df['Визиты'])
+
+                conditions = [
+                    df['Операционная система (детально)'].str.contains('Windows', case=False),
+                    df['Операционная система (детально)'].str.contains('Android', case=False),
+                    df['Операционная система (детально)'].str.contains('iOS', case=False),
+                    df['Операционная система (детально)'].str.contains('mac', case=False),
+                    df['Операционная система (детально)'].str.contains('Linux', case=False)
+                ]
+
+                choices = ['Windows', 'Android', 'iOS', 'macOS', 'Linux']
+
+                df['os_group'] = np.select(conditions, choices, default='Другое')
+
+                grouped_df = df.groupby('os_group')['Визиты'].sum().reset_index()
+
+                charts_data_response.append({
+                    "chart_id": 9,
+                    "chart_type": "Кольцевая диаграмма",
+                    "data": grouped_df.rename(columns={'os_group': 'os', 'Визиты': 'value'})  # Переименовываем столбцы
+                    .to_dict('records')
+                })
+
             for i in charts_data_response:
                 print(i)
 
