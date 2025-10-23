@@ -11,8 +11,6 @@ import pandas as pd
 import numpy as np
 import io
 
-charts_data_response = []
-
 class MetrikaAPIView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -29,6 +27,7 @@ class MetrikaAPIView(APIView):
             return Response({"error": "Не указаны ID счетчика или API токен"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            charts_data_response = []
             if 1 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
                 params = {
