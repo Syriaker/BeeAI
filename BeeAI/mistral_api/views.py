@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 from .models import MistralAPI
+from .services import MistralService
 from datetime import datetime
 import requests
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -28,6 +29,7 @@ class MetrikaAPIView(APIView):
 
         try:
             charts_data_response = []
+            mistral_response = []
             if 1 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
                 params = {
@@ -56,6 +58,8 @@ class MetrikaAPIView(APIView):
                     "chart_type": "Столбчатая диаграмма",
                     "data": df.rename(columns={'Период': 'time', '(Визиты)': 'value'}).to_dict('records')
                 })
+
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 2 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
@@ -86,7 +90,7 @@ class MetrikaAPIView(APIView):
                     "data": df.rename(columns={'Период': 'time', '(Просмотры)': 'value'}).to_dict('records')
                 })
 
-
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 4 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
@@ -117,6 +121,8 @@ class MetrikaAPIView(APIView):
                     .rename(columns={'Период': 'date'})
                     .to_dict('records')
                 })
+
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 6 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
@@ -153,6 +159,8 @@ class MetrikaAPIView(APIView):
                     .to_dict('records')
                 })
 
+                mistral_response.append(MistralService.generate_response(metrika_data))
+
             if 7 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
                 params = {
@@ -186,6 +194,8 @@ class MetrikaAPIView(APIView):
                         {"category": "Мобильные", "value": str(mobile)},
                     ]
                 })
+
+                mistral_response.append('test')    #mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 8 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
@@ -229,6 +239,8 @@ class MetrikaAPIView(APIView):
                     "chart_type": "Гистограмма",
                     "data": template_df.reset_index().to_dict('records')
                 })
+
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 9 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
@@ -276,21 +288,23 @@ class MetrikaAPIView(APIView):
                     .to_dict('records')
                 })
 
+                mistral_response.append(MistralService.generate_response(metrika_data))
+
             for i in charts_data_response:
                 print(i)
-
-
-            mistral_response = 'test' #MistralService.generate_response(metrika_data)  # генерим ответ
+            final_response = ''
+            for i in mistral_response:
+                final_response = final_response + i + '\n'
 
             MistralAPI.objects.create(
                 user=request.user,
                 counter_id=counter_id,
                 prompt=metrika_data,
-                response=mistral_response,
+                response=final_response,
                 charts_data = charts_data_response
             )
 
-            return Response({"response": mistral_response,"charts_data": charts_data_response}, status=status.HTTP_200_OK)
+            return Response({"response": final_response,"charts_data": charts_data_response}, status=status.HTTP_200_OK)
 
         except ValueError:
             return Response({"error": "Некорректный ID счетчика. Должно быть целым числом."},
@@ -316,7 +330,7 @@ class MistralAPIView(APIView):
 
         try:
 
-            response = 'test' #MistralService.generate_response(prompt)
+            response = MistralService.generate_response(prompt)
 
             MistralAPI.objects.create(prompt=prompt, response=response)
 
