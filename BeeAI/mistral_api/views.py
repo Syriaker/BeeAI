@@ -177,6 +177,8 @@ class MetrikaAPIView(APIView):
 
                 metrika_data = r.text
 
+                print(metrika_data)
+
                 csv_file = io.StringIO(metrika_data)
 
                 df = pd.read_csv(csv_file, header=0)
@@ -195,7 +197,7 @@ class MetrikaAPIView(APIView):
                     ]
                 })
 
-                mistral_response.append('test')    #mistral_response.append(MistralService.generate_response(metrika_data))
+                mistral_response.append('За отчетный период сайт получил 9 визитов от 6 уникальных посетителей. Аудитория разделилась практически пополам между ПК (5 визитов, 2 посетителя) и смартфонами (4 визита, 4 посетителя). Ключевая проблема — низкая вовлеченность пользователей с ПК: при 5 визитах с компьютеров было всего 2 уникальных посетителя, что указывает на высокий показатель отказов или быстрое закрытие сайта. При этом мобильная аудитория демонстрирует стабильный интерес (1 визит на человека).')    #mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 8 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
@@ -289,6 +291,87 @@ class MetrikaAPIView(APIView):
                 })
 
                 mistral_response.append(MistralService.generate_response(metrika_data))
+
+            if 10 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
+                params = {
+                    'date1': '30daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:users,ym:s:newUsers',
+                    'limit': 100
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                print(metrika_data)
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+
+                total_visitors = df.iloc[0,0]
+                new_visitors = df.iloc[0,1]
+
+                returning_visitors = total_visitors - new_visitors
+
+                charts_data_response.append({
+                    "chart_id": 10,
+                    "chart_type": "Круговая диаграмма",
+                    "data": [
+                        {"category": "Новые пользователи", "value": str(new_visitors)},
+                        {"category": "Вернувшиеся пользователи", "value": str(returning_visitors)},
+                    ]
+                })
+
+            if 11 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:users',
+                    'dimensions': 'ym:s:gender',
+                    'limit': 100
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+
+                df = df[df['Пол'] != 'Итого и средние'].copy()
+                df['Посетители'] = pd.to_numeric(df['Посетители'])
+
+                gender_map = {'мужской': 'Мужчины', 'женский': 'Женщины'}
+                df['gender'] = df['Пол'].map(gender_map)
+
+                gender_data = df.set_index('gender')['Посетители']
+
+                full_gender_data = gender_data.reindex(['Мужчины', 'Женщины'], fill_value=0)
+
+                final_df = full_gender_data.reset_index()
+                final_df = final_df.rename(columns={'index': 'category', 'Посетители': 'value'})
+
+                charts_data_response.append({
+                    "chart_id": 11,
+                    "chart_type": "Круговая диаграмма",
+                    "data": final_df.to_dict('records')
+                })
+
+                mistral_response.append('абоба')    #mistral_response.append(MistralService.generate_response(metrika_data))
+
 
             for i in charts_data_response:
                 print(i)
