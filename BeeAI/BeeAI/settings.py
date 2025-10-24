@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework.authtoken',
     'corsheaders',
-    'mistral_api',
+    'mistral_api.apps.MistralApiConfig',
     'rest_framework',
     'accounts',
 ]
@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'BeeAI.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'BeeAIdb',
+        'NAME': 'BeeAIdb_new',
         'USER': 'beeaiadmin',
         'PASSWORD': 'sdfvvc231',
         'HOST': 'localhost',

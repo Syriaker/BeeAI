@@ -227,7 +227,7 @@ class MetrikaAPIView(APIView):
                     ]
                 })
 
-                mistral_response.append('За отчетный период сайт получил 9 визитов от 6 уникальных посетителей. Аудитория разделилась практически пополам между ПК (5 визитов, 2 посетителя) и смартфонами (4 визита, 4 посетителя). Ключевая проблема — низкая вовлеченность пользователей с ПК: при 5 визитах с компьютеров было всего 2 уникальных посетителя, что указывает на высокий показатель отказов или быстрое закрытие сайта. При этом мобильная аудитория демонстрирует стабильный интерес (1 визит на человека).')    #mistral_response.append(MistralService.generate_response(metrika_data))
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
             if 8 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
@@ -358,7 +358,7 @@ class MetrikaAPIView(APIView):
                         {"category": "Вернувшиеся пользователи", "value": str(returning_visitors)},
                     ]
                 })
-
+                mistral_response.append(MistralService.generate_response(metrika_data))
             if 11 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data.csv'
                 params = {
@@ -400,14 +400,14 @@ class MetrikaAPIView(APIView):
                     "data": final_df.to_dict('records')
                 })
 
-                mistral_response.append('абоба')    #mistral_response.append(MistralService.generate_response(metrika_data))
+                mistral_response.append(MistralService.generate_response(metrika_data))
 
 
             for i in charts_data_response:
                 print(i)
             final_response = ''
             for i in mistral_response:
-                final_response = final_response + i + '\n'
+                final_response = final_response + i + '\n\n'
 
             MistralAPI.objects.create(
                 user=request.user,
