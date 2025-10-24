@@ -124,6 +124,36 @@ class MetrikaAPIView(APIView):
 
                 mistral_response.append(MistralService.generate_response(metrika_data))
 
+            if 5 in charts:
+                API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
+                params = {
+                    'date1': '6daysAgo',
+                    'date2': 'today',
+                    'id': counter_id,
+                    'metrics': 'ym:s:pageDepth',
+                    'group': 'day'
+                }
+
+                r = requests.get(API_URL, params=params, headers={'Authorization': api_token})
+                r.raise_for_status()
+
+                metrika_data = r.text
+
+                csv_file = io.StringIO(metrika_data)
+
+                df = pd.read_csv(csv_file, header=0)
+                df = df.dropna(how='all')
+                df = df.reset_index(drop=True)
+
+                charts_data_response.append({
+                    "chart_id": 5,
+                    "chart_type": "Линейный график",
+                    "data": df.rename(columns={'Период': 'date', '(Глубина просмотра)': 'value'})
+                    .to_dict('records')
+                })
+
+                mistral_response.append('абоба')
+
             if 6 in charts:
                 API_URL = 'https://api-metrika.yandex.ru/stat/v1/data/bytime.csv'
                 params = {
